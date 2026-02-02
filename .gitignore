@@ -1,0 +1,38 @@
+# =====================
+# Python
+# =====================
+__pycache__/
+*.pyc
+*.pyo
+
+# =====================
+# Virtual Environments
+# =====================
+venv/
+.env/
+
+# Windows venv (full folder)
+chatbot/
+
+# Just in case
+Lib/
+Scripts/
+Include/
+share/
+pyvenv.cfg
+
+# =====================
+# Caches
+# =====================
+.cache/
+.huggingface/
+torch_cache/
+
+# =====================
+# OS / Editor
+# =====================
+.vscode/
+.DS_Store
+Thumbs.db
+
+.env
