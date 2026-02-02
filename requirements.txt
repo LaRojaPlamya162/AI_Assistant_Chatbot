@@ -4,3 +4,12 @@ transformers
 reportlab
 ddgs
 torch
+langchain-ollama
+langchain-tavily
+langchain-openai
+arxiv
+sentence-transformers
+faiss-cpu
+unstructured
+pdfminer
+pypdfium2

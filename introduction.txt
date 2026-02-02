@@ -51,3 +51,19 @@ Citation nguồn
 Streaming response
 
 👉 Phù hợp vị trí: RAG Engineer, LLM Engineer
+
+* Web search: 
+- SearxNG (wiki, web...) 
+- Tavily Search (free tier limit)
+- DuckDuckGo (not recommended)
+- PlayWrightBrowserToolKit (crawl/browser)
+* Specific tool search:
+- Repo:  GitHubIssuesLoader (repo, file,...)
+- Arxiv: load_tools(["arxiv"]) (only arxiv link)
+- Wiki:
+- StackExchange: 
+* Code/Data Analysis:
+- Daytona 
+- Riza Code
+- E2B
+Model: Ollama off + Gemini (limit) + Groq + (ChatTogether + ChatLlamaCpp)
