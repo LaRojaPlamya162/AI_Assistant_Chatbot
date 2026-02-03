@@ -64,7 +64,7 @@ class ContentSources:
       },
       {
          "title": "Conservative Q-Learning for Offline Reinforcement Learning",
-         "url": "https://arxiv.org/abs/2006.04779"
+         "url": "https://arxiv.org/pdf/2006.04779"
       }
     ]
     def get_pdf_urls(self):

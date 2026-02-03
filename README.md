@@ -29,3 +29,9 @@ python -m venv <tên_môi_trường>
 ```bash
 pip install -r requirements.txt
 ```
+
+### Cài đặt mô hình (tùy chọn)
+
+```bash
+ollama pull qwen2.5:1.5b-instruct
+```

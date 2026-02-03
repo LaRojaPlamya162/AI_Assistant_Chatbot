@@ -13,3 +13,7 @@ faiss-cpu
 unstructured
 pdfminer
 pypdfium2
+arxiv-downloader
+pdfminer.six==20220524
+trafilatura
+langchain-google-genai

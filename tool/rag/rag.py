@@ -1,5 +1,13 @@
 from typing import List
 import faiss
+import requests
+from pathlib import Path
+from urllib.parse import urlparse
+import urllib.request
+import re
+import arxiv
+import subprocess
+import os
 
 from langchain_community.vectorstores import FAISS
 from langchain_community.docstore.in_memory import InMemoryDocstore
@@ -9,9 +17,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import OnlinePDFLoader, PyPDFium2Loader
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
-
+from langchain_community.document_loaders import OnlinePDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from data.content import ContentSources
-
+from component.model import Model
+#import trafilatura
 
 class RAGAgent:
     def __init__(self):
@@ -31,11 +41,12 @@ class RAGAgent:
         )
 
         # LLM
-        self.llm = ChatOllama(
+        '''self.llm = ChatOllama(
             model="qwen2.5:1.5b-instruct",
             base_url="http://localhost:11434",
             temperature=0.1
-        )
+        )'''
+        self.llm = Model()
 
         self.prompt = ChatPromptTemplate.from_template("""
 You are an AI assistant that answers questions using the given context.
@@ -52,12 +63,18 @@ If the context does not contain the answer, say "I don't know."
 
     # ---------- BUILD KB (ONE TIME) ----------
     def _build_knowledge_base(self):
-        content = ContentSources()
-        pdf_urls: List[str] = content.get_pdf_urls()
-
+        #content = 
+        pdf_dir = "data/paper"
+        files_list = []
+        for file_name in os.listdir(pdf_dir):
+            full_path = os.path.join(pdf_dir, file_name)
+            if os.path.isfile(full_path):
+                print(full_path)
+                files_list.append(full_path)
         documents = []
-        for url in pdf_urls:
-            loader = PyPDFium2Loader(f"{url}.pdf")
+        for file in files_list:
+            print(f"Load file: {file}")
+            loader = PyPDFLoader(file)
             documents.extend(loader.load())
 
         splitter = RecursiveCharacterTextSplitter(
@@ -81,7 +98,7 @@ If the context does not contain the answer, say "I don't know."
             question=question
         )
 
-        response = self.llm.invoke(prompt)
+        response = self.llm.answer(prompt)
 
         return {
             "answer": response.content,
