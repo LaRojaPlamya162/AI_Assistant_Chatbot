@@ -12,14 +12,9 @@ import os
 from langchain_community.vectorstores import FAISS
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import OnlinePDFLoader, PyPDFium2Loader
-from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_community.document_loaders import OnlinePDFLoader
 from langchain_community.document_loaders import PyPDFLoader
-from data.content import ContentSources
 from component.model import Model
 #import trafilatura
 
@@ -39,13 +34,6 @@ class RAGAgent:
             docstore=InMemoryDocstore(),
             index_to_docstore_id={}
         )
-
-        # LLM
-        '''self.llm = ChatOllama(
-            model="qwen2.5:1.5b-instruct",
-            base_url="http://localhost:11434",
-            temperature=0.1
-        )'''
         self.llm = Model()
 
         self.prompt = ChatPromptTemplate.from_template("""
@@ -100,12 +88,9 @@ If the context does not contain the answer, say "I don't know."
 
         response = self.llm.answer(prompt)
 
-        return {
-            "answer": response.content,
-            "sources": docs
-        }
+        return response.content
 
 
 if __name__ == "__main__":
     agent = RAGAgent()
-    print(agent.ask("What is Transformer?")["answer"])
+    print(agent.ask("What is Transformer?"))

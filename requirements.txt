@@ -7,13 +7,13 @@ torch
 langchain-ollama
 langchain-tavily
 langchain-openai
-arxiv
+arxiv==1.4.8
 sentence-transformers
 faiss-cpu
 unstructured
 pdfminer
 pypdfium2
-arxiv-downloader
 pdfminer.six==20220524
 trafilatura
 langchain-google-genai
+pymupdf
