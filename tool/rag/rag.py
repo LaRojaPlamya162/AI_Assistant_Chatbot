@@ -16,17 +16,16 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.document_loaders import PyPDFLoader
 from component.model import Model
+from component.tool import split_documents
 #import trafilatura
 
 class RAGAgent:
-    def __init__(self):
-        # Embedding
+    def __init__(self, loader):
         self.embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-mpnet-base-v2"
         )
         dim = len(self.embeddings.embed_query("test"))
 
-        # Vector store
         index = faiss.IndexFlatL2(dim)
         self.vector_store = FAISS(
             embedding_function=self.embeddings,
@@ -34,8 +33,9 @@ class RAGAgent:
             docstore=InMemoryDocstore(),
             index_to_docstore_id={}
         )
-        self.llm = Model()
 
+        self.llm = Model()
+        self.loader = loader
         self.prompt = ChatPromptTemplate.from_template("""
 You are an AI assistant that answers questions using the given context.
 
@@ -46,36 +46,15 @@ Question: {question}
 
 If the context does not contain the answer, say "I don't know."
 """)
-
+        
         self._build_knowledge_base()
-
-    # ---------- BUILD KB (ONE TIME) ----------
     def _build_knowledge_base(self):
-        #content = 
-        pdf_dir = "data/paper"
-        files_list = []
-        for file_name in os.listdir(pdf_dir):
-            full_path = os.path.join(pdf_dir, file_name)
-            if os.path.isfile(full_path):
-                print(full_path)
-                files_list.append(full_path)
-        documents = []
-        for file in files_list:
-            print(f"Load file: {file}")
-            loader = PyPDFLoader(file)
-            documents.extend(loader.load())
+        documents = self.loader.load()
+        chunks = split_documents(documents)
 
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200
-        )
-
-        chunks = splitter.split_documents(documents)
         self.vector_store.add_documents(chunks)
-
-        print(f"✅ Knowledge base built with {len(chunks)} chunks")
-
-    # ---------- ASK ----------
+        print(f"✅ KB built with {len(chunks)} chunks")
+    
     def ask(self, question: str):
         retriever = self.vector_store.as_retriever(search_kwargs={"k": 3})
         docs = retriever.invoke(question)
@@ -89,7 +68,6 @@ If the context does not contain the answer, say "I don't know."
         response = self.llm.answer(prompt)
 
         return response.content
-
 
 if __name__ == "__main__":
     agent = RAGAgent()

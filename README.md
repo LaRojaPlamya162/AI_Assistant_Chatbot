@@ -15,13 +15,13 @@ cd AI_Assistant_Chatbot
 ### Tạo môi trường ảo 
 
 ```bash
-python -m venv <tên_môi_trường>
+python -m venv chatbot
 ```
 
 ### Kích hoạt virtual environment
 
 ```bash
-.\<tên_môi_trường>\Scripts\Activate.ps1
+.\chabot\Scripts\Activate.ps1
 ```
 
 ### Cài đặt thư viện cần thiết
