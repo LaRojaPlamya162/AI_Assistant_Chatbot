@@ -67,7 +67,21 @@ def replace_abs_to_pdf(url):
 def split_documents(documents, chunk_size = 1000, overlap = 200):
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
-        chunk_overlap=overlap
+        chunk_overlap=overlap,
+        separators=["\n\n", "\n", " ", ""],
     )
     return splitter.split_documents(documents)
   
+def split_code_documents(documents):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1400,          # code cần chunk lớn hơn
+        chunk_overlap=200,
+        separators=[
+            "\nclass ",
+            "\ndef ",
+            "\nasync def ",
+            "\n\n",
+            "\n",
+        ],
+    )
+    return splitter.split_documents(documents)

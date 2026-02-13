@@ -8,7 +8,7 @@ class PDFDirectoryLoader(BaseLoader):
     def __init__(self, pdf_dir: str):
         self.pdf_dir = pdf_dir
 
-    def load(self) -> List[Document]:
+    def load(self):
         documents = []
         for file in os.listdir(self.pdf_dir):
             path = os.path.join(self.pdf_dir, file)

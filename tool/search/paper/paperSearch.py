@@ -59,6 +59,7 @@ If the context does not contain the answer, say "I don't know."
         docs = self.retriever.invoke(question)
         urls = [doc.metadata['Entry ID'] for doc in docs]
         loader = URLLoader(urls = urls)
+        docs = loader.load()
         agent = RAGAgent(loader)
         print(agent.ask(question))
 

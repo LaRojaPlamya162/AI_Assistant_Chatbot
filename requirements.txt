@@ -17,3 +17,4 @@ pdfminer.six==20220524
 trafilatura
 langchain-google-genai
 pymupdf
+gitpython

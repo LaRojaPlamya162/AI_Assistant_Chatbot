@@ -16,11 +16,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.document_loaders import PyPDFLoader
 from component.model import Model
-from component.tool import split_documents
+from component.tool import split_documents, split_code_documents
 #import trafilatura
 
 class RAGAgent:
-    def __init__(self, loader):
+    def __init__(self, loader, source_type: str = "web"):
         self.embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-mpnet-base-v2"
         )
@@ -47,16 +47,19 @@ Question: {question}
 If the context does not contain the answer, say "I don't know."
 """)
         
-        self._build_knowledge_base()
-    def _build_knowledge_base(self):
+        self._build_knowledge_base(source_type)
+    def _build_knowledge_base(self, source_type):
         documents = self.loader.load()
-        chunks = split_documents(documents)
+        if source_type == "web":
+            chunks = split_documents(documents)
+        elif source_type == "code":
+            chunks = split_code_documents(documents)
 
         self.vector_store.add_documents(chunks)
         print(f"✅ KB built with {len(chunks)} chunks")
     
     def ask(self, question: str):
-        retriever = self.vector_store.as_retriever(search_kwargs={"k": 3})
+        retriever = self.vector_store.as_retriever(search_kwargs={"k": 10})
         docs = retriever.invoke(question)
 
         context = "\n\n".join(d.page_content for d in docs)
@@ -68,7 +71,6 @@ If the context does not contain the answer, say "I don't know."
         response = self.llm.answer(prompt)
 
         return response.content
-
-if __name__ == "__main__":
-    agent = RAGAgent()
-    print(agent.ask("What is Transformer?"))
+    
+    #agent = RAGAgent()
+    #print(agent.ask("What is Transformer?"))
