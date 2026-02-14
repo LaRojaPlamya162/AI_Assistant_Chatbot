@@ -7,12 +7,13 @@ from langchain_core.documents import Document
 
 from tool.rag.rag import RAGAgent
 from tool.rag.loader.repo_loader import repoLoader
-class RepoSearch:
+class RepoSearchAgent:
     """
     Load Git repository -> split -> return LangChain Documents ready for RAG.
     """
     def __init__(self):
         pass
+
     def answer(self, 
                clone_url: str,
                question: str
@@ -23,5 +24,5 @@ class RepoSearch:
         print(agent.ask(question))
 
 if __name__ == '__main__':
-    search = RepoSearch()
+    search = RepoSearchAgent()
     search.answer(clone_url = "https://github.com/hieudz2k4/AI", question = "What is the main content of this repo ?")

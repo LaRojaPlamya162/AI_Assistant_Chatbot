@@ -36,16 +36,9 @@ class RAGAgent:
 
         self.llm = Model()
         self.loader = loader
-        self.prompt = ChatPromptTemplate.from_template("""
-You are an AI assistant that answers questions using the given context.
-
-Context:
-{context}
-
-Question: {question}
-
-If the context does not contain the answer, say "I don't know."
-""")
+        self.prompt = ChatPromptTemplate.from_template( 
+            """ You are an AI assistant that answers questions using the given context. You must give the answer as most detail as possible (maximum 1000 words) Context: {context} Question: {question} If the context does not contain the answer, say "I don't know."""
+            )
         
         self._build_knowledge_base(source_type)
     def _build_knowledge_base(self, source_type):
@@ -59,7 +52,7 @@ If the context does not contain the answer, say "I don't know."
         print(f"✅ KB built with {len(chunks)} chunks")
     
     def ask(self, question: str):
-        retriever = self.vector_store.as_retriever(search_kwargs={"k": 10})
+        retriever = self.vector_store.as_retriever(search_kwargs={"k": 5})
         docs = retriever.invoke(question)
 
         context = "\n\n".join(d.page_content for d in docs)

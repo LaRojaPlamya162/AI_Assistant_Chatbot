@@ -42,7 +42,7 @@ class WebSearchAgent:
 
     def answer(self, query: str):
         tool_name, docs = self.choose_model(query)
-        print("\n=== RESULT ===")
+        #print("\n=== RESULT ===")
         print(f"Source: {tool_name}")
         print(docs)
 
