@@ -1,14 +1,14 @@
 import arxiv
 from langchain_community.retrievers import ArxivRetriever
 from langchain_core.prompts import ChatPromptTemplate
-from tool.rag.loader.url_loader import URLLoader
-from tool.rag.rag import RAGAgent
-from tool.search.web.webSearch import WebSearchAgent
+from component.loader.url_loader import URLLoader
+from component.agent import Agent
+from function.search.internet.internetSearch import InternetSearchAgent
 class PaperInfoSearchAgent:
     def __init__(self):
         self.client = arxiv.Client()
-        self.webAgent = WebSearchAgent()
-    def get_url_link(self, query, k = 2):
+        self.webAgent = InternetSearchAgent()
+    def get_url_link(self, query, k = 1):
         search = arxiv.Search(
             query = query,
             max_results=k,
@@ -42,8 +42,8 @@ class PaperInfoSearchAgent:
     def fullAnswer(self, question):
         urls = self.get_url_link(question)
         loader = URLLoader(urls = urls)
-        agent = RAGAgent(loader)
-        print(agent.ask(question))
+        agent = Agent(loader)
+        print(agent.run(question, task = "paper_review"))
 
 if __name__ == "__main__":
     paper = PaperInfoSearchAgent()

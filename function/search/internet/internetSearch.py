@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-class WebSearchAgent:
+class InternetSearchAgent:
     def __init__(self):
         os.environ["SERPER_API_KEY"] = os.getenv("SERPER_API_KEY")
         os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
@@ -48,5 +48,5 @@ class WebSearchAgent:
 
 
 if __name__ == "__main__":
-    agent = WebSearchAgent()
-    agent.answer("What is the main concept of Transformer architecture ?")
+    agent = InternetSearchAgent()
+    agent.answer( "Can you speak Vietnamese ? May i ask you by Vietnamese? (answer with max 100 words)")

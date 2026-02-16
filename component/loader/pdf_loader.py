@@ -4,8 +4,8 @@ from langchain_core.documents import Document
 from langchain_community.document_loaders import PyPDFLoader
 from .base import BaseLoader
 
-class PDFDirectoryLoader(BaseLoader):
-    def __init__(self, pdf_dir: str):
+class PDFDirLoader(BaseLoader):
+    def __init__(self, pdf_dir: str = os.path.join("data/paper")):
         self.pdf_dir = pdf_dir
 
     def load(self):
@@ -16,3 +16,4 @@ class PDFDirectoryLoader(BaseLoader):
                 loader = PyPDFLoader(path)
                 documents.extend(loader.load())
         return documents
+    
