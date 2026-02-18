@@ -38,12 +38,10 @@ class Agent:
         else:
             raise ValueError("Unsupported source_type")
 
-        # ❗ Quan trọng: bỏ chunk rỗng (rất hay gây lỗi FAISS)
         chunks = [c for c in chunks if c.page_content.strip()]
 
         print(f"🔎 Total clean chunks: {len(chunks)}")
 
-        # ✅ LET LANGCHAIN HANDLE FAISS
         vector_store = FAISS.from_documents(
             documents=chunks,
             embedding=self.embedding
@@ -51,19 +49,14 @@ class Agent:
 
         print("✅ Knowledge Base built successfully")
         return vector_store
-
-    # ---------------------------------------------------
-    # Retrieve context
-    # ---------------------------------------------------
+    
     def retrieve(self, query: str, k: int = 5) -> str:
         retriever = self.vector_store.as_retriever(search_kwargs={"k": k})
         docs = retriever.invoke(query)
 
         return "\n\n".join(d.page_content for d in docs)
 
-    # ---------------------------------------------------
-    # Run QA
-    # ---------------------------------------------------
+
     def run(self, question: str, task: str = "qa"):
         context = self.retrieve(question)
 

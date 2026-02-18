@@ -21,7 +21,7 @@ python -m venv chatbot
 ### Kích hoạt virtual environment
 
 ```bash
-.\chabot\Scripts\Activate.ps1
+.\chatbot\Scripts\Activate.ps1
 ```
 
 ### Cài đặt thư viện cần thiết
