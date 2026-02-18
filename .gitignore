@@ -38,4 +38,11 @@ Thumbs.db
 .env
 introduction.txt
 data/paper/
-repo/
+
+
+/repo/
+
+!tool/
+!tool/search/
+!tool/search/repo/
+!tool/search/repo/**
