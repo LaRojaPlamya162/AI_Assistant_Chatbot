@@ -67,7 +67,7 @@ class Agent:
             question=question
         )
 
-        llm = self.llm.model()
+        llm = self.llm.get_llm()
         response = llm.invoke(prompt)
 
         return response.content

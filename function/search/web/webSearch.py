@@ -1,7 +1,7 @@
 from typing import List
 from component.agent import Agent
-from component.loader.repo_loader import repoLoader
-class RepoSearchAgent:
+from component.loader.url_loader import URLLoader
+class WebSearchAgent:
     """
     Load Git repository -> split -> return LangChain Documents ready for RAG.
     """
@@ -12,11 +12,11 @@ class RepoSearchAgent:
                clone_url: List[str],
                question: str
                ):
-        loader = repoLoader(clone_url = clone_url)
+        loader = URLLoader(clone_url = clone_url)
         #print(loader.load())
         agent = Agent(loader, source_type = "code")
         print(agent.run(question, task = "code_explain"))
 
 if __name__ == '__main__':
-    search = RepoSearchAgent()
+    search = WebSearchAgent()
     search.answer(clone_url = "https://github.com/hieudz2k4/AI", question = "What is the main content of this repo ?")

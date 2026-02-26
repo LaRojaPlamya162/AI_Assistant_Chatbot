@@ -5,6 +5,7 @@ import fitz  # PyMuPDF
 from io import BytesIO
 from typing import List
 from pathlib import Path
+import re
 
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -85,3 +86,30 @@ def split_code_documents(documents):
         ],
     )
     return splitter.split_documents(documents)
+
+def extract_urls(text: str) -> List[str]:
+    """
+    Extract all URLs from a given string.
+
+    Args:
+        text (str): Input sentence / command.
+
+    Returns:
+        List[str]: List of detected URLs.
+    """
+
+    URL_PATTERN = re.compile(
+    r"""(?xi)
+    \b
+    (                               # whole url
+        (?:https?://|ftp://)        # protocol
+        [^\s/$.?#].[^\s]*           # domain + path
+    )
+    """
+)
+    if not text:
+        return []
+
+    matches = re.findall(URL_PATTERN, text)
+    return matches
+

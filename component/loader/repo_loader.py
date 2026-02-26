@@ -4,7 +4,7 @@ from langchain_community.document_loaders import GitLoader
 from .base import BaseLoader
 class repoLoader(BaseLoader):
   def __init__(self,
-               clone_url: str, 
+               clone_url: List[str], 
                repo_path: str = "./repo",
                branch: str = "main",
                file_filter: Optional[Callable[[str], bool]] = None):
@@ -15,12 +15,16 @@ class repoLoader(BaseLoader):
             self.file_filter = self._default_file_filter
     else:
             self.file_filter = file_filter
-    self.loader = GitLoader(
-            clone_url = clone_url,
+    self.loader = []
+    for url in clone_url:
+         load = GitLoader(
+            clone_url = url,
             repo_path=str(repo_path),
             branch = branch,
             file_filter = file_filter
         )
+         self.loader.extend(load)
+        
   def _default_file_filter(self, path: str) -> bool:
     # chỉ index file mang thông tin hệ thống
     allowed_ext = (".py", ".md")
