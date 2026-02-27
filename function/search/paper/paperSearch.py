@@ -2,7 +2,7 @@ import arxiv
 from langchain_community.retrievers import ArxivRetriever
 from langchain_core.prompts import ChatPromptTemplate
 from component.loader.url_loader import URLLoader
-from component.agent import Agent
+from component.engine import Engine
 from function.search.internet.internetSearch import InternetSearchAgent
 class PaperInfoSearchAgent:
     def __init__(self):
@@ -42,7 +42,7 @@ class PaperInfoSearchAgent:
     def fullAnswer(self, question):
         urls = self.get_url_link(question)
         loader = URLLoader(urls = urls)
-        agent = Agent(loader)
+        agent = Engine(loader)
         print(agent.run(question, task = "paper_review"))
 
 if __name__ == "__main__":

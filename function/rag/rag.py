@@ -9,13 +9,13 @@ import arxiv
 import subprocess
 import os
 from component.loader.pdf_loader import PDFDirLoader
-from component.agent import Agent
+from component.engine import Engine
 class RAGAgent:
     def __init__(self):
         self.loader = PDFDirLoader()
 
     def ask(self, question):
-        agent = Agent(self.loader)
+        agent = Engine(self.loader)
         return agent.run(question, task = "qa")
     
 if __name__ == "__main__":

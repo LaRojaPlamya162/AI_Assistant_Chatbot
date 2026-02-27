@@ -5,17 +5,17 @@
 
 # load_dotenv()
 
+
 # class Model:
 #     def __init__(self):
-#         # ==== Load ALL Gemini Keys Dynamically ====
 #         self.gemini_keys = self._load_gemini_keys()
 
 #         if len(self.gemini_keys) == 0:
 #             raise ValueError("No GEMINI_API_KEY_x found in .env")
 
-#         self.key_index = 0  # dùng cho round-robin
+#         self.key_index = 0
 
-#         # ==== Local model (fallback) ====
+#         # Local fallback model
 #         self.__llm_off = ChatOllama(
 #             model="qwen2.5:1.5b-instruct",
 #             base_url="http://localhost:11434",
@@ -25,11 +25,8 @@
 #         self.__llm = None
 #         self.model_name = None
 
-#         # init model
 #         self.select_base_model()
 
-#     # ---------------------------------------------------
-#     # Load keys: GEMINI_API_KEY_1 ... GEMINI_API_KEY_N
 #     # ---------------------------------------------------
 #     def _load_gemini_keys(self):
 #         keys = []
@@ -37,12 +34,10 @@
 #             if k.startswith("GEMINI_API_KEY_"):
 #                 keys.append(v)
 
-#         keys.sort()  # optional: deterministic order
+#         keys.sort()
 #         print(f"[INFO] Loaded {len(keys)} Gemini keys")
 #         return keys
 
-#     # ---------------------------------------------------
-#     # Create Gemini model from current key
 #     # ---------------------------------------------------
 #     def _create_online_model(self):
 #         key = self.gemini_keys[self.key_index]
@@ -54,71 +49,99 @@
 #         )
 
 #     # ---------------------------------------------------
-#     # Rotate key (round-robin)
-#     # ---------------------------------------------------
 #     def _rotate_key(self):
 #         self.key_index = (self.key_index + 1) % len(self.gemini_keys)
 
 #     # ---------------------------------------------------
-#     # Select model (Gemini if possible, else Ollama)
-#     # ---------------------------------------------------
 #     def select_base_model(self, query="ping"):
+#         """
+#         Try each Gemini key. If all fail → fallback Ollama.
+#         """
 #         for _ in range(len(self.gemini_keys)):
 #             try:
 #                 llm = self._create_online_model()
-#                 answer = llm.invoke(query)
 
-#                 if answer.content and answer.content.strip():
+#                 # lightweight health-check
+#                 test = llm.invoke("hello")
+
+#                 if test.content:
 #                     self.__llm = llm
 #                     self.model_name = f"Gemini-Key-{self.key_index+1}"
+#                     print(f"[INFO] Using {self.model_name}")
 #                     return
 
-#             except Exception as e:
+#             except Exception:
 #                 print(f"[WARN] Key {self.key_index+1} failed → rotating")
 
 #             self._rotate_key()
 
-#         # If ALL keys fail → fallback local
 #         print("[INFO] All Gemini keys failed → Using Ollama")
 #         self.__llm = self.__llm_off
 #         self.model_name = "Ollama"
 
 #     # ---------------------------------------------------
-#     def model(self):
+#     def get_llm(self, tools=None):
+#         """
+#         RETURN LLM (optionally bind tools)
+#         This is the function LangGraph should call.
+#         """
+#         self.select_base_model()
+
+#         if tools:
+#             print(f"[INFO] Binding tools to {self.model_name}")
+#             return self.__llm.bind_tools(tools)
+
 #         return self.__llm
 
 #     # ---------------------------------------------------
-#     def answer(self, question: str):
+#     def safe_invoke(self, messages, tools=None):
+#         """
+#         Used if you want manual invoke outside LangGraph.
+#         Includes auto key-rotation on failure.
+#         """
 #         try:
-#             self.select_base_model(question)
-#             ans = self.__llm.invoke(question)
-
-#             print(f"Answer: {ans.content}")
-#             print(f"Model name: {self.model_name}")
+#             llm = self.get_llm(tools)
+#             return llm.invoke(messages)
 
 #         except Exception:
-#             print("[ERROR] Online failed → fallback Ollama")
-#             self.__llm = self.__llm_off
-#             ans = self.__llm.invoke(question)
+#             print("[WARN] Invoke failed → rotating key and retrying")
+#             self._rotate_key()
+#             self.select_base_model()
+#             llm = self.get_llm(tools)
+#             return llm.invoke(messages)
 
-#             print(f"Answer: {ans.content}")
-#             print("Model name: Ollama (forced fallback)")
-
-
-# if __name__ == '__main__':
-#     model = Model()
-#     model.answer("What company does Jeff Bezos own?")
-    
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_ollama import ChatOllama
 import os
 from dotenv import load_dotenv
+from threading import Lock
 
 load_dotenv()
 
 
 class Model:
+    _instance = None
+    _lock = Lock()  # thread-safe singleton
+
+    # ---------------------------------------------------
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    print("[INFO] Creating Singleton Model instance...")
+                    cls._instance = super(Model, cls).__new__(cls)
+                    cls._instance._initialized = False
+        return cls._instance
+
+    # ---------------------------------------------------
     def __init__(self):
+        # Prevent __init__ chạy lại nhiều lần
+        if self._initialized:
+            return
+
+        print("[INFO] Initializing Model (ONLY ONCE)")
+        self._initialized = True
+
         self.gemini_keys = self._load_gemini_keys()
 
         if len(self.gemini_keys) == 0:
@@ -126,7 +149,7 @@ class Model:
 
         self.key_index = 0
 
-        # Local fallback model
+        # Local fallback model (khởi tạo 1 lần duy nhất)
         self.__llm_off = ChatOllama(
             model="qwen2.5:1.5b-instruct",
             base_url="http://localhost:11434",
@@ -136,7 +159,8 @@ class Model:
         self.__llm = None
         self.model_name = None
 
-        self.select_base_model()
+        # Chỉ select model đúng 1 lần
+        self.select_base_model(first_init=True)
 
     # ---------------------------------------------------
     def _load_gemini_keys(self):
@@ -146,7 +170,7 @@ class Model:
                 keys.append(v)
 
         keys.sort()
-        print(f"[INFO] Loaded {len(keys)} Gemini keys")
+        print(f"[INFO] Loaded {len(keys)} Gemini keys (ONCE)")
         return keys
 
     # ---------------------------------------------------
@@ -162,29 +186,36 @@ class Model:
     # ---------------------------------------------------
     def _rotate_key(self):
         self.key_index = (self.key_index + 1) % len(self.gemini_keys)
+        print(f"[INFO] Rotated to key {self.key_index+1}")
 
     # ---------------------------------------------------
-    def select_base_model(self, query="ping"):
+    def select_base_model(self, first_init=False):
         """
-        Try each Gemini key. If all fail → fallback Ollama.
+        Only health-check when:
+        - first init
+        - or previous invoke failed
         """
+        if self.__llm is not None and not first_init:
+            return  # tránh check lại mỗi lần get_llm()
+
         for _ in range(len(self.gemini_keys)):
             try:
                 llm = self._create_online_model()
 
-                # lightweight health-check
-                test = llm.invoke("hello")
+                if first_init:
+                    # Chỉ test đúng 1 lần lúc start app
+                    test = llm.invoke("hello")
+                    if not test.content:
+                        raise RuntimeError("Empty response")
 
-                if test.content:
-                    self.__llm = llm
-                    self.model_name = f"Gemini-Key-{self.key_index+1}"
-                    print(f"[INFO] Using {self.model_name}")
-                    return
+                self.__llm = llm
+                self.model_name = f"Gemini-Key-{self.key_index+1}"
+                print(f"[INFO] Using {self.model_name}")
+                return
 
             except Exception:
                 print(f"[WARN] Key {self.key_index+1} failed → rotating")
-
-            self._rotate_key()
+                self._rotate_key()
 
         print("[INFO] All Gemini keys failed → Using Ollama")
         self.__llm = self.__llm_off
@@ -193,13 +224,9 @@ class Model:
     # ---------------------------------------------------
     def get_llm(self, tools=None):
         """
-        RETURN LLM (optionally bind tools)
-        This is the function LangGraph should call.
+        Called MANY times but model NEVER reloads.
         """
-        self.select_base_model()
-
         if tools:
-            print(f"[INFO] Binding tools to {self.model_name}")
             return self.__llm.bind_tools(tools)
 
         return self.__llm
@@ -207,16 +234,18 @@ class Model:
     # ---------------------------------------------------
     def safe_invoke(self, messages, tools=None):
         """
-        Used if you want manual invoke outside LangGraph.
-        Includes auto key-rotation on failure.
+        Only rotate key when real failure happens.
         """
         try:
             llm = self.get_llm(tools)
             return llm.invoke(messages)
 
         except Exception:
-            print("[WARN] Invoke failed → rotating key and retrying")
+            print("[WARN] Invoke failed → rotating key")
+
             self._rotate_key()
+            self.__llm = None
             self.select_base_model()
+
             llm = self.get_llm(tools)
             return llm.invoke(messages)

@@ -9,7 +9,7 @@ from component.model import Model
 from component.tool import split_documents, split_code_documents
 from component.prompt_registry import PromptRegistry
 
-class Agent:
+class Engine:
     def __init__(self, loader, source_type: str = "web"):
         self.loader = loader
         self.source_type = source_type

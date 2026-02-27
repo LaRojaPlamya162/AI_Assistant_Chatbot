@@ -113,3 +113,19 @@ def extract_urls(text: str) -> List[str]:
     matches = re.findall(URL_PATTERN, text)
     return matches
 
+def extract_clean_text(text: str):
+    """
+    Extract clean query (for web search) excepts links
+
+    Args:
+        Text(str): query for chatbot
+
+    Returns:
+        Clean_text(str): clean query (exclude url) for chatbot
+    """
+
+    urls = extract_urls(text)
+    for url in urls:
+        text = text.replace(url,"")
+    return text
+

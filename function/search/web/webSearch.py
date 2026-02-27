@@ -1,5 +1,5 @@
 from typing import List
-from component.agent import Agent
+from component.engine import Engine
 from component.loader.url_loader import URLLoader
 class WebSearchAgent:
     """
@@ -14,7 +14,7 @@ class WebSearchAgent:
                ):
         loader = URLLoader(clone_url = clone_url)
         #print(loader.load())
-        agent = Agent(loader, source_type = "code")
+        agent = Engine(loader, source_type = "code")
         print(agent.run(question, task = "code_explain"))
 
 if __name__ == '__main__':

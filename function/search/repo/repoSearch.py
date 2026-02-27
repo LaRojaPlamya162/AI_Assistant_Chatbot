@@ -1,5 +1,5 @@
 from typing import List
-from component.agent import Agent
+from component.engine import Engine
 from component.loader.repo_loader import repoLoader
 class RepoSearchAgent:
     """
@@ -14,7 +14,7 @@ class RepoSearchAgent:
                ):
         loader = repoLoader(clone_url = clone_url)
         #print(loader.load())
-        agent = Agent(loader, source_type = "code")
+        agent = Engine(loader, source_type = "code")
         print(agent.run(question, task = "code_explain"))
 
 if __name__ == '__main__':

@@ -41,8 +41,4 @@ data/paper/
 
 
 /repo/
-
-!tool/
-!tool/search/
-!tool/search/repo/
-!tool/search/repo/**
+repo_cache/

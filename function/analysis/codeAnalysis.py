@@ -1,12 +1,12 @@
 from langchain_community.document_loaders import TextLoader
 from component.loader.code_analysis_loader import CodeAnalysisLoader
-from component.agent import Agent
+from component.engine import Engine
 class CodeAnalysis:
   def __init__(self):
     pass
   def answer(self, code: str):
     loader = CodeAnalysisLoader(code)
-    agent = Agent(loader)
+    agent = Engine(loader)
     return agent.run(question = "", task = "code_explain")
 if __name__ == "__main__":
   agent = CodeAnalysis()
