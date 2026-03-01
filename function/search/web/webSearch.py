@@ -12,7 +12,7 @@ class WebSearchAgent:
                clone_url: List[str],
                question: str
                ):
-        loader = URLLoader(clone_url = clone_url)
+        loader = URLLoader(urls = clone_url)
         #print(loader.load())
         agent = Engine(loader, source_type = "code")
         print(agent.run(question, task = "code_explain"))

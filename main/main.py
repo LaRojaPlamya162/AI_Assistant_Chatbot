@@ -19,37 +19,111 @@ from function.search.web.webSearch import WebSearchAgent
 from function.search.repo.repoSearch import RepoSearchAgent
 class AgentState(BaseModel):
     messages: Annotated[List[AnyMessage], add_messages]
-    task_name: str|None = None
     tool_result: Annotated[List[str], add] = []
+    pending_tasks: List[str] = []
+    #current_task: str|None = None
 
-class RootTask(BaseModel):
-    task_name: List[Literal['search','analyze']]= Field(
-        default = 'search',
-        description='choose task for specific application'
+class PlannerTask(BaseModel):
+    """
+    Decide which tools MUST be executed to answer the user request.
+
+    IMPORTANT:
+    - You are NOT answering the question.
+    - You are selecting the correct workflow.
+    - Multiple tasks are allowed and often REQUIRED.
+    - Prefer combining tasks rather than choosing only one.
+    """
+
+    task_name: List[
+        Literal[
+            "internet_search",
+            "paper_search",
+            "web_search",
+            "repo_search",
+        ]
+    ] = Field(
+        ...,
+        min_length=1,
+        description=
+        """
+Select task(s) based on USER INTENT, not wording.
+
+### internet_search
+Use when:
+- User asks for explanation, concept, definition, overview.
+- General knowledge is needed.
+- No academic source explicitly required.
+
+Examples:
+- "What is Transformer architecture?"
+- "Explain reinforcement learning"
+- "How does ROS2 work?"
+
+---
+
+### paper_search  (ACADEMIC MODE)
+Use when user wants ANY research evidence, including:
+- mentions: paper, research, arxiv, study, publication, survey
+- asks for: references, citations, related work
+- asks about a method that originates from academia
+- says: "give me papers", "find research", "scientific explanation"
+
+IMPORTANT:
+Even if NO title is given → STILL use paper_search.
+
+Examples:
+- "Give me papers about Transformer"
+- "Any research on diffusion models?"
+- "Find arxiv related to this topic"
+- "Explain and provide references"
+
+If explanation is ALSO required → combine with internet_search.
+
+---
+
+### web_search
+Use ONLY when user provides a URL and wants its content understood.
+
+Examples:
+- "Summarize this page: https://..."
+- "What does this website explain?"
+
+Do NOT use for general browsing.
+
+---
+
+### repo_search
+Use when user provides a GitHub repository and wants:
+- codebase understanding
+- architecture explanation
+- how to run / modify the repo
+
+Trigger when:
+- A GitHub URL is present
+- User says "analyze this repo"
+
+---
+
+### Multi-task Rules (VERY IMPORTANT)
+
+If request contains BOTH:
+- explanation + research → use:
+    ["internet_search", "paper_search"]
+
+If request contains:
+- repo + explanation → use:
+    ["repo_search", "internet_search"]
+
+If request contains:
+- URL + deeper understanding → use:
+    ["web_search", "internet_search"]
+
+NEVER drop paper_search when academic intent exists.
+When unsure → include more tasks, not fewer.
+"""
     )
-
-class SearchTask(BaseModel):
-    task_name: Literal['internet', 'repo', 'paper', 'web'] = Field(
-        default="internet",
-        description = "Task for search method in distinct way"
-    )
-
-class AnalyzeTask(BaseModel):
-    task_name: Literal['code', 'paragraph'] = Field(
-        default = 'paragraph',
-        description="Distinct way to analyze"
-    )
-
-root_model = ChatOllama(
-    model="qwen2.5:1.5b-instruct",
-    temperature=0
-)
-
 model = Model().get_llm()
-
-root_router = root_model.with_structured_output(RootTask)
-search_router = root_model.with_structured_output(SearchTask)
-analyze_router = root_model.with_structured_output(AnalyzeTask)
+planner_router = model.with_structured_output(PlannerTask)
 
 
 def ensure_list_str(value) -> list[str]:
@@ -67,28 +141,21 @@ def ensure_list_str(value) -> list[str]:
     text = str(value).strip()
     return [text] if text else ["No information found."]
 
-def root_node(state: AgentState):
-    decision = root_router.invoke(state.messages)
-
+def planner_node(state: AgentState):
+    decision = planner_router.invoke(state.messages)
     return Command(
-        update={"task_name": decision.task_name},
-        goto=f"{decision.task_name}_node"
+        update={"pending_tasks": decision.task_name},
+        goto="execution"
     )
 
-def search_node(state: AgentState):
-    decision = search_router.invoke(state.messages)
-
+def execution_node(state: AgentState):
+    if not state.pending_tasks:
+        return Command(goto="final")
+    
+    next_task = state.pending_tasks[0]
     return Command(
-        update={"task_name": decision.task_name},
-        goto=f"{decision.task_name}_search_node"
-    )
-
-def analyze_node(state: AgentState):
-    decision = analyze_router.invoke(state.messages)
-
-    return Command(
-        update={"task_name": decision.task_name},
-        goto=f"{decision.task_name}_analyze_node"
+        update={"pending_tasks": state.pending_tasks[1:]},
+        goto=next_task
     )
 
 # Search
@@ -103,7 +170,7 @@ def internet_search_node(state: AgentState):
     return Command(
        # update={"tool_result": [agent.answer(query)]},
        update = {"tool_result": ensure_list_str(raw)},
-        goto="final_node")
+        goto="execution")
 
 def web_search_node(state: AgentState):
     """Extract and summarize content from a given URL."""
@@ -114,11 +181,10 @@ def web_search_node(state: AgentState):
     url = extract_urls(query)
     question = extract_clean_text(query)
     agent = WebSearchAgent()
-    raw = agent.answer(query)
+    raw = agent.answer(url, query)
     return Command(
-        #update = {"tool_result": [agent.answer(url,question)]},
         update = {"tool_result": ensure_list_str(raw)},
-        goto="final_node"
+        goto="execution"
     )
 
 def repo_search_node(state: AgentState):
@@ -132,7 +198,7 @@ def repo_search_node(state: AgentState):
     raw = agent.answer(url, query)
     return Command(
         update = {"tool_result": ensure_list_str(raw)},
-        goto="final_node")
+        goto="execution")
 
 def paper_search(state: AgentState):
     """Search academic papers."""
@@ -144,7 +210,7 @@ def paper_search(state: AgentState):
     raw = agent.fullAnswer(query)
     return Command(
         update = {"tool_result": ensure_list_str(raw)},
-        goto="final_node"
+        goto="execution"
     )
 
 # Analyze
@@ -157,8 +223,6 @@ def final_node(state: AgentState):
     )
     safe_results = ensure_list_str(state.tool_result)
     collected_info = "\n\n".join(safe_results)
-    #collected_info = "\n\n".join(state.tool_result)
-
     prompt = f"""
 You are a helpful AI assistant.
 
@@ -180,20 +244,21 @@ Do not mention internal tools.
     )
 
 builder = StateGraph(AgentState)
-builder.add_node("root_node", root_node)
-builder.add_node("search_node", search_node)
-builder.add_node("analyze_node", analyze_node)
-builder.add_node("internet_search_node", internet_search_node)
-builder.add_node("web_search_node", web_search_node)
-builder.add_node("repo_search_node", repo_search_node)
-builder.add_node("paper_search_node", paper_search)
-builder.add_node("final_node", final_node)    
-builder.set_entry_point("root_node")
-
+builder.add_node("planner", planner_node)
+builder.add_node("execution", execution_node)
+builder.add_node("internet_search", internet_search_node)
+builder.add_node("web_search", web_search_node)
+builder.add_node("repo_search", repo_search_node)
+builder.add_node("paper_search", paper_search)
+builder.add_node("final", final_node)    
+builder.set_entry_point("planner")
 graph = builder.compile()
-result = graph.invoke({
-    "messages": [HumanMessage(content="Explain this repo https://github.com/unslothai/unsloth and find related papers")]
-})
+while True:
+    question = input("Please enter your question: ")
+    result = graph.invoke({
+        "messages": [HumanMessage(content = question)]
+    })
+    #print(result)
 
 
 
